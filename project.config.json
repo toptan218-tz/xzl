@@ -1,0 +1,8 @@
+{
+  "miniprogramRoot": "dist/weapp/",
+  "projectname": "心之力",
+  "description": "心之力 Taro 源码重建",
+  "appid": "touristappid",
+  "setting": { "es6": true, "minified": true, "postcss": true },
+  "compileType": "miniprogram"
+}

@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.swc/
+.taro/
+.npm-cache/
+*.local
+project.private.config.json
