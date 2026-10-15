@@ -1650,6 +1650,38 @@ body {
 }
 
 /* Shared native/H5 defaults and safe-area fallbacks. */
+.screen.screen-weapp {
+  box-sizing: border-box;
+}
+.screen.screen-weapp .top {
+  min-height: 0;
+  position: absolute;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  border-bottom: 0;
+}
+.screen.screen-weapp.screen-me .top {
+  display: none;
+}
+.screen.screen-weapp .nav {
+  inset: auto 0 0;
+  width: 100%;
+  height: 64px;
+  background: #fbf8f1;
+  border-top: 1px solid #d9cebd;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.screen.screen-weapp .nav-item {
+  height: 64px;
+  flex-direction: column;
+}
+.login {
+  box-sizing: border-box;
+}
 .ui-button {
   box-sizing: border-box;
   margin-left: 0;

@@ -2,6 +2,8 @@ import { createApiClient, ApiError } from "./services/client";
 import { mergeFavorites } from "./services/normalize";
 import { createAuthFlow } from "./auth-flow";
 import shareCover from "./assets/share/cover.jpg";
+import { createWechatSession } from "./wechat-session";
+import { isWeapp, getNavigationLayout } from "./platform-layout";
 const storage = {
   get: (key) => String(getStorageSync(key) || ""),
   set: (key, value) => setStorageSync(key, value),
@@ -58,7 +60,11 @@ const go = (page, query = "") => {
       });
 };
 const assetPath = (name) => "/assets/" + name;
-const tryWechatLogin = () => Promise.resolve(false);
+const tryWechatLogin = createWechatSession({
+  enabled: isWeapp,
+  login: () => wechatLogin({ timeout: 10000 }),
+  api,
+});
 const errorMessage = (error) =>
   error instanceof Error ? error.message : "暂时无法读取，请重试。";
 import { ScrollView, Button, Text, View } from "@tarojs/components";
@@ -79,6 +85,7 @@ import {
   useShareAppMessage,
   useShareTimeline,
   useDidShow,
+  login as wechatLogin,
 } from "@tarojs/taro";
 function useShare() {
   (useShareAppMessage(() => ({
@@ -99,10 +106,25 @@ function Screen({
   title: n = "心之力",
   compactHome: r = false,
 }) {
+  const layout = getNavigationLayout();
   return (
-    <View className={`screen screen-${t}${r ? " home-compose" : ""}`}>
+    <View
+      className={`screen screen-${t}${r ? " home-compose" : ""}${isWeapp ? " screen-weapp" : ""}`}
+      style={isWeapp ? { paddingTop: `${layout.topInset}px` } : {}}
+    >
       {false}
-      <View className={"top"}>
+      <View
+        className={"top"}
+        style={
+          isWeapp
+            ? {
+                top: `${layout.statusBarHeight}px`,
+                height: `${layout.navigationHeight}px`,
+                paddingRight: `${layout.rightInset}px`,
+              }
+            : {}
+        }
+      >
         <View className={"brand-lockup"}>
           <Text className={"ui-text brand-star"}>{"★"}</Text>
           <Text className={"ui-text brand"}>{n}</Text>
@@ -146,12 +168,24 @@ function useSession(page) {
   async function retry() {
     const id = ++sequence.current;
     setError("");
-    if (!api.hasSession()) {
-      setUser(null);
-      return;
-    }
     try {
-      const profile = await api.me();
+      await tryWechatLogin();
+      if (!api.hasSession()) {
+        if (mounted.current && id === sequence.current) setUser(null);
+        return;
+      }
+      let profile;
+      try {
+        profile = await api.me();
+      } catch (err) {
+        if (!isWeapp || err.status !== 401) throw err;
+        api.clear();
+        if (!(await tryWechatLogin(true))) {
+          if (mounted.current && id === sequence.current) setUser(null);
+          return;
+        }
+        profile = await api.me();
+      }
       if (mounted.current && id === sequence.current) setUser(profile);
     } catch (err) {
       if (mounted.current && id === sequence.current) {
@@ -184,12 +218,12 @@ function SourceReader({ reference: e }) {
     [a, o] = React.useState(""),
     [l, c] = React.useState(false),
     u = React.useRef(0);
-  async function d() {
-    if (t === a && !l) return (u.current++, void n(null));
+  async function d(mode, retry = false) {
+    if (t === mode && !retry) return (u.current++, void n(null));
     const i = ++u.current;
-    (n(a), o(""), c(true));
+    (n(mode), o(""), c(true));
     try {
-      const t = null != r ? r : await api.article(e.source, a);
+      const t = !retry && r != null ? r : await api.article(e.source);
       i === u.current && s(t);
     } catch (d) {
       if (i === u.current) {

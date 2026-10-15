@@ -31,6 +31,33 @@ const { createApiClient } = load(
   normalize,
 );
 const tick = () => new Promise((resolve) => setImmediate(resolve));
+test("WeChat login exchanges code and retains registration token for SMS binding", async () => {
+  const store = new Map();
+  const api = createApiClient(
+    async (url, method, data) => {
+      if (url === "/auth/wechat/login") {
+        assert.equal(data.wechatCode, "wx-code");
+        return { status: 200, data: { registrationToken: "registration" } };
+      }
+      assert.equal(url, "/auth/sms/login");
+      assert.equal(data.registrationToken, "registration");
+      return {
+        status: 200,
+        data: { accessToken: "access", refreshToken: "refresh" },
+      };
+    },
+    {
+      get: (key) => store.get(key),
+      set: (key, value) => store.set(key, value),
+      remove: (key) => store.delete(key),
+    },
+  );
+  assert.equal(await api.wechatLogin("wx-code"), false);
+  assert.equal(api.hasRegistration(), true);
+  await api.login("13800000000", "123456", "sms-request");
+  assert.equal(api.hasSession(), true);
+  assert.equal(api.hasRegistration(), false);
+});
 function authHarness(confirm = false) {
   const calls = [];
   let pages = [{ route: "pages/home/index" }, { route: "pages/login/index" }];

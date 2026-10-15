@@ -88,7 +88,7 @@ function FavoritesPage() {
       setOpenId(""),
       loadFavorites(e));
   }
-  async function loadDetail() {
+  async function loadDetail(s) {
     if (openId === s.id)
       return (detailSequence.current++, setOpenId(""), void setDetail(null));
     const e = ++detailSequence.current;

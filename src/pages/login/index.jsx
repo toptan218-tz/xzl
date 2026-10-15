@@ -3,7 +3,9 @@ import { Button, Input, Text, Image, View } from "@tarojs/components";
 import * as React from "react";
 import loginBackground from "./assets/login-screen-background.png";
 import { useShare, api, backFromLogin, errorMessage } from "../../shared";
+import { isWeapp, getNavigationLayout } from "../../platform-layout";
 function LoginPage() {
+  const layout = getNavigationLayout();
   useShare();
   const [phone, setPhone] = React.useState(""),
     [code, setCode] = React.useState(""),
@@ -16,7 +18,10 @@ function LoginPage() {
     loginBusy = React.useRef(false),
     [windowHeight] = React.useState(() => getSystemInfoSync().windowHeight),
     [windowWidth] = React.useState(() => getSystemInfoSync().windowWidth),
-    boardWidth = Math.min(windowWidth, 0.5654 * windowHeight),
+    boardWidth = Math.min(
+      windowWidth,
+      0.5654 * (windowHeight - layout.topInset),
+    ),
     boardHeight = 1.7686 * boardWidth;
   async function sendCode() {
     var e;
@@ -66,10 +71,12 @@ function LoginPage() {
         className={"login"}
         style={{
           minHeight: `${windowHeight}px`,
+          paddingTop: isWeapp ? `${layout.topInset}px` : undefined,
         }}
       >
         <Button
           className="login-back ui-button"
+          style={isWeapp ? { top: `${layout.backTop}px` } : {}}
           onClick={() => backFromLogin()}
         >
           返回
